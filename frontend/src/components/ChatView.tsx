@@ -1,7 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react'
-import { Send, Sparkles, Bot, User } from 'lucide-react'
+import { Send, Sparkles, Bot, User, Mic, MicOff, Volume2 } from 'lucide-react'
 import type { ChatMessage, Expression, AnimationType } from '../types'
 import { api } from '../services/api'
+import { voice } from '../services/voice'
 
 interface ChatViewProps {
   onCompanionReply: (reply: { text: string; expression: Expression; animation: AnimationType }) => void
@@ -12,13 +13,14 @@ export const ChatView: React.FC<ChatViewProps> = ({ onCompanionReply }) => {
     {
       id: 'welcome',
       sender: 'assistant',
-      text: "Hi there! I'm Sparky! How's your day going? You can ask me anything or tell me how you feel!",
+      text: "Hi there! I'm Sparky! You can speak or type to me anytime. How can I brighten your day?",
       expression: 'happy',
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ])
   const [input, setInput] = useState<string>('')
   const [loading, setLoading] = useState<boolean>(false)
+  const [isListening, setIsListening] = useState<boolean>(false)
   const messagesEndRef = useRef<HTMLDivElement | null>(null)
 
   const quickSuggestions = [
@@ -62,6 +64,10 @@ export const ChatView: React.FC<ChatViewProps> = ({ onCompanionReply }) => {
         timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
       }
       setMessages((prev) => [...prev, assistantMsg])
+      
+      // Speak response out loud using Voice Engine!
+      voice.speak(reply.text, { expression: reply.expression })
+
       onCompanionReply({
         text: reply.text,
         expression: reply.expression,
@@ -70,6 +76,37 @@ export const ChatView: React.FC<ChatViewProps> = ({ onCompanionReply }) => {
     } finally {
       setLoading(false)
     }
+  }
+
+  const toggleMic = () => {
+    if (isListening) {
+      voice.stopListening()
+      setIsListening(false)
+      return
+    }
+
+    const started = voice.startListening({
+      onStart: () => setIsListening(true),
+      onInterim: (interim) => setInput(interim),
+      onResult: (finalText) => {
+        setIsListening(false)
+        setInput(finalText)
+        handleSend(finalText)
+      },
+      onError: (err) => {
+        setIsListening(false)
+        alert(err)
+      },
+      onEnd: () => setIsListening(false),
+    })
+
+    if (!started) {
+      setIsListening(false)
+    }
+  }
+
+  const handleReplayVoice = (msgText: string, expr?: string) => {
+    voice.speak(msgText, { expression: expr })
   }
 
   return (
@@ -92,18 +129,30 @@ export const ChatView: React.FC<ChatViewProps> = ({ onCompanionReply }) => {
             </div>
 
             <div
-              className={`max-w-[80%] rounded-2xl p-3 text-xs leading-relaxed shadow-md ${
+              className={`relative group max-w-[80%] rounded-2xl p-3 text-xs leading-relaxed shadow-md ${
                 m.sender === 'user'
                   ? 'bg-blue-600/90 text-white rounded-tr-none'
                   : 'bg-slate-900 border border-slate-800 text-slate-200 rounded-tl-none'
               }`}
             >
-              {m.sender === 'assistant' && m.expression && (
-                <div className="flex items-center gap-1.5 mb-1 text-[10px] text-orange-400 font-semibold">
-                  <Sparkles className="w-3 h-3" />
-                  <span className="capitalize">{m.expression}</span>
-                </div>
-              )}
+              <div className="flex items-center justify-between gap-2 mb-1">
+                {m.sender === 'assistant' && m.expression && (
+                  <div className="flex items-center gap-1.5 text-[10px] text-orange-400 font-semibold">
+                    <Sparkles className="w-3 h-3" />
+                    <span className="capitalize">{m.expression}</span>
+                  </div>
+                )}
+                {m.sender === 'assistant' && (
+                  <button
+                    onClick={() => handleReplayVoice(m.text, m.expression)}
+                    className="p-1 text-slate-400 hover:text-orange-400 transition-colors opacity-80 group-hover:opacity-100 cursor-pointer"
+                    title="Listen to this message"
+                  >
+                    <Volume2 className="w-3.5 h-3.5" />
+                  </button>
+                )}
+              </div>
+
               <p>{m.text}</p>
               <div
                 className={`text-[9px] mt-1 text-right ${
@@ -140,13 +189,30 @@ export const ChatView: React.FC<ChatViewProps> = ({ onCompanionReply }) => {
 
       {/* Input bar */}
       <div className="p-3 bg-slate-900/90 border-t border-slate-800 flex items-center gap-2">
+        {voice.isSTTSupported() && (
+          <button
+            type="button"
+            onClick={toggleMic}
+            className={`p-2.5 rounded-xl transition-all cursor-pointer ${
+              isListening
+                ? 'bg-rose-500 text-white animate-pulse'
+                : 'bg-slate-800 hover:bg-slate-700 text-slate-300'
+            }`}
+            title={isListening ? 'Stop listening' : 'Voice input (Speak to Sparky)'}
+          >
+            {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+          </button>
+        )}
+
         <input
           type="text"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && handleSend()}
-          placeholder="Talk to Sparky..."
-          className="flex-1 bg-slate-950 border border-slate-700/80 rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-orange-500/80 transition-all"
+          placeholder={isListening ? 'Listening to your voice...' : 'Talk to Sparky...'}
+          className={`flex-1 bg-slate-950 border rounded-xl px-3.5 py-2 text-xs text-slate-100 placeholder:text-slate-400 focus:outline-none transition-all ${
+            isListening ? 'border-rose-500/80 ring-2 ring-rose-500/20' : 'border-slate-700/80 focus:border-orange-500/80'
+          }`}
         />
         <button
           onClick={() => handleSend()}

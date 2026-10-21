@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
 import confetti from 'canvas-confetti'
-import { Wifi, WifiOff } from 'lucide-react'
+import { Wifi, WifiOff, Volume2, VolumeX } from 'lucide-react'
 import type { Expression, AnimationType, CompanionMode } from './types'
 import { api } from './services/api'
+import { voice } from './services/voice'
 import { CharacterCanvas } from './components/CharacterCanvas'
 import { SpeechBubble } from './components/SpeechBubble'
 import { QuickActions } from './components/QuickActions'
@@ -18,8 +19,11 @@ export const App: React.FC = () => {
   const [currentMode, setCurrentMode] = useState<CompanionMode>('friend')
   const [expression, setExpression] = useState<Expression>('idle')
   const [animation, setAnimation] = useState<AnimationType>('idle')
-  const [speechText, setSpeechText] = useState<string>('Hello! Tap, pet, or tickle me!')
+  const [speechText, setSpeechText] = useState<string>('Hello! Tap, pet, or speak to me!')
   const [isSpeaking, setIsSpeaking] = useState<boolean>(false)
+  const [isListening, setIsListening] = useState<boolean>(false)
+  const [interimSpeech, setInterimSpeech] = useState<string>('')
+  const [isMuted, setIsMuted] = useState<boolean>(() => voice.getMuted())
   const [isOnline, setIsOnline] = useState<boolean>(true)
 
   const idleTimeout = useRef<number | null>(null)
@@ -31,18 +35,26 @@ export const App: React.FC = () => {
     })
   }, [])
 
-  const triggerReaction = (text: string, expr: Expression, anim: AnimationType, duration = 3500) => {
+  const triggerReaction = (text: string, expr: Expression, anim: AnimationType, duration = 4000) => {
     setSpeechText(text)
     setExpression(expr)
     setAnimation(anim)
-    setIsSpeaking(true)
 
     if (idleTimeout.current) clearTimeout(idleTimeout.current)
 
-    // Speaking mouth animation timing
-    setTimeout(() => {
-      setIsSpeaking(false)
-    }, Math.min(2200, text.length * 55))
+    // Invoke speech synthesis to SPEAK OUT LOUD!
+    voice.speak(text, {
+      expression: expr,
+      onStart: () => {
+        setIsSpeaking(true)
+      },
+      onEnd: () => {
+        setIsSpeaking(false)
+      },
+      onError: () => {
+        setIsSpeaking(false)
+      },
+    })
 
     idleTimeout.current = window.setTimeout(() => {
       setExpression('idle')
@@ -88,8 +100,63 @@ export const App: React.FC = () => {
     handleCharacterTouch('pet')
   }
 
-  const handleCompanionReply = (reply: { text: string; expression: Expression; animation: AnimationType }) => {
-    triggerReaction(reply.text, reply.expression, reply.animation)
+  const handleToggleVoice = () => {
+    if (isListening) {
+      voice.stopListening()
+      setIsListening(false)
+      setInterimSpeech('')
+      return
+    }
+
+    setExpression('listening')
+    setSpeechText('Listening to your voice...')
+    setInterimSpeech('')
+
+    const started = voice.startListening({
+      onStart: () => setIsListening(true),
+      onInterim: (text) => setInterimSpeech(text),
+      onResult: async (finalText) => {
+        setIsListening(false)
+        setInterimSpeech('')
+        setExpression('thinking')
+        setSpeechText(`Thinking about: "${finalText}"...`)
+        
+        const reply = await api.sendChatMessage(finalText)
+        triggerReaction(reply.text, reply.expression, reply.animation)
+      },
+      onError: (err) => {
+        setIsListening(false)
+        setInterimSpeech('')
+        setExpression('idle')
+        alert(err)
+      },
+      onEnd: () => {
+        setIsListening(false)
+      },
+    })
+
+    if (!started) {
+      setIsListening(false)
+      setExpression('idle')
+    }
+  }
+
+  const handleToggleMute = () => {
+    const nextMuted = !isMuted
+    setIsMuted(nextMuted)
+    voice.setMuted(nextMuted)
+    if (!nextMuted) {
+      // Audio cue test
+      voice.speak('Voice is unmuted!', { expression: 'happy' })
+    }
+  }
+
+  const handleReplayCurrent = () => {
+    voice.speak(speechText, {
+      expression,
+      onStart: () => setIsSpeaking(true),
+      onEnd: () => setIsSpeaking(false),
+    })
   }
 
   return (
@@ -114,14 +181,28 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-1.5">
+          <div className="flex items-center gap-2">
+            {/* Mute/Unmute Toggle Button */}
+            <button
+              onClick={handleToggleMute}
+              className={`p-1.5 rounded-lg border transition-all cursor-pointer ${
+                isMuted
+                  ? 'bg-red-500/10 border-red-500/30 text-red-400 hover:bg-red-500/20'
+                  : 'bg-slate-800 border-slate-700 text-slate-300 hover:text-orange-400'
+              }`}
+              title={isMuted ? 'Voice is muted. Click to unmute.' : 'Voice is active. Click to mute.'}
+            >
+              {isMuted ? <VolumeX className="w-4 h-4" /> : <Volume2 className="w-4 h-4 text-emerald-400" />}
+            </button>
+
+            {/* Online/Offline Status Badge */}
             {isOnline ? (
-              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20">
+              <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold bg-emerald-500/10 px-2 py-1 rounded-full border border-emerald-500/20">
                 <Wifi className="w-3 h-3" />
                 <span>Online</span>
               </span>
             ) : (
-              <span className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              <span className="flex items-center gap-1 text-[10px] text-amber-400 font-semibold bg-amber-500/10 px-2 py-1 rounded-full border border-amber-500/20">
                 <WifiOff className="w-3 h-3" />
                 <span>Offline</span>
               </span>
@@ -136,29 +217,48 @@ export const App: React.FC = () => {
               {/* Cozy Room Background Elements */}
               <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-orange-500/5 via-slate-900/20 to-slate-950/80 pointer-events-none" />
               
-              {/* Speech Bubble */}
+              {/* Speech Bubble with Replay */}
               <div className="pt-2">
-                <SpeechBubble text={speechText} expression={expression} visible={true} />
+                <SpeechBubble
+                  text={interimSpeech ? `"${interimSpeech}..."` : speechText}
+                  expression={isListening ? 'listening' : expression}
+                  visible={true}
+                  isSpeaking={isSpeaking}
+                  onReplay={handleReplayCurrent}
+                />
               </div>
 
-              {/* 60FPS Interactive Living Character */}
-              <div className="flex-1 flex items-center justify-center my-auto">
+              {/* 60FPS Interactive Living Character with Listening Aura */}
+              <div className="relative flex-1 flex items-center justify-center my-auto">
+                {isListening && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <span className="w-72 h-72 rounded-full border border-rose-500/30 animate-ping" />
+                    <span className="w-80 h-80 rounded-full border border-rose-500/20 animate-pulse" />
+                  </div>
+                )}
                 <CharacterCanvas
-                  expression={expression}
+                  expression={isListening ? 'listening' : expression}
                   animation={animation}
                   isSpeaking={isSpeaking}
                   onCharacterTouch={handleCharacterTouch}
                 />
               </div>
 
-              {/* Tactile Quick Actions */}
-              <QuickActions onFeed={handleFeed} onDance={handleDance} onPet={handlePet} />
+              {/* Tactile Quick Actions + Voice Mic */}
+              <QuickActions
+                onFeed={handleFeed}
+                onDance={handleDance}
+                onPet={handlePet}
+                onToggleVoice={handleToggleVoice}
+                isListening={isListening}
+                isSupportedSTT={voice.isSTTSupported()}
+              />
             </div>
           )}
 
           {currentTab === 'chat' && (
             <div className="flex-1 p-3 overflow-hidden">
-              <ChatView onCompanionReply={handleCompanionReply} />
+              <ChatView onCompanionReply={(reply) => triggerReaction(reply.text, reply.expression, reply.animation)} />
             </div>
           )}
 
