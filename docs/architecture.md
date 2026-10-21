@@ -4,14 +4,15 @@
 
 ```
 +-------------------------------------------------------------+
-|                 Mobile Client (Godot 4.x)                   |
-|  - 2D/3D Character Renderer (AnimatedSprite2D / Skeletal)   |
+|          Mobile Client (React + TypeScript + Vite)          |
+|  - 60FPS Living Character Engine (HTML5 Canvas Vector)      |
 |  - Character State Machine (Idle, Happy, Curious, etc.)     |
-|  - Touch Handling (Tap, Pet, Tickle)                        |
-|  - Voice Interface (Microphone capture, audio playback)     |
-|  - Views: Main Room, Chat, Memories, Research, Settings     |
+|  - Tactile Touch Gestures (Tap, Drag/Petting, Tickle, Feed) |
+|  - Pupil Eye Tracking & Procedural Talking Animation        |
+|  - Views: Room, Chat, Memory Vault, Research, Mini-Game     |
+|  - Mobile PWA / Android APK Ready via Capacitor             |
 +------------------------------+------------------------------+
-                               | HTTPS / WSS
+                               | HTTPS / REST API
                                v
 +-------------------------------------------------------------+
 |              FastAPI Application Gateway (Python)            |
