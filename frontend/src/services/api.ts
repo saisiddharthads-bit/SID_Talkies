@@ -75,7 +75,7 @@ class ApiService {
     }
 
     // Auto-login or register guest user
-    const guestEmail = `guest_${Math.floor(Math.random() * 899999 + 100000)}@companion.local`
+    const guestEmail = `guest_${Math.floor(Math.random() * 899999 + 100000)}@example.com`
     const guestPass = 'companion_guest_pass_123'
 
     try {
