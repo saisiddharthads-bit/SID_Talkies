@@ -32,6 +32,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
 }) => {
   const [apiUrl, setApiUrl] = useState<string>(api.getBaseUrl())
   const [geminiKey, setGeminiKey] = useState<string>(() => api.getGeminiKey())
+  const [keyTestStatus, setKeyTestStatus] = useState<{ testing: boolean; success?: boolean; message?: string }>({ testing: false })
   const [statusMsg, setStatusMsg] = useState<string>('')
 
   // Voice studio state
@@ -133,10 +134,14 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
     setTimeout(() => setStatusMsg(''), 2500)
   }
 
-  const handleSaveGeminiKey = () => {
-    api.setGeminiKey(geminiKey.trim())
-    setStatusMsg('Gemini API key updated!')
-    setTimeout(() => setStatusMsg(''), 2500)
+  const handleTestKey = async () => {
+    if (!geminiKey.trim()) {
+      setKeyTestStatus({ testing: false, success: false, message: 'Please enter a Gemini API key first.' })
+      return
+    }
+    setKeyTestStatus({ testing: true })
+    const res = await api.testGeminiApiKey(geminiKey.trim())
+    setKeyTestStatus({ testing: false, success: res.success, message: res.message })
   }
 
   const handleDeleteAccount = async () => {
@@ -315,30 +320,51 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
           </p>
           <div>
             <label className="block text-slate-400 text-[11px] mb-1">
-              Optional Google Gemini API Key (for direct Google AI Cloud):
+              Google Gemini API Key (from Google AI Studio):
             </label>
             <div className="flex gap-2">
               <input
                 type="password"
                 value={geminiKey}
-                onChange={(e) => setGeminiKey(e.target.value)}
-                placeholder="AIzaSy... (leave blank to use free cloud AI)"
-                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+                onChange={(e) => {
+                  const val = e.target.value
+                  setGeminiKey(val)
+                  api.setGeminiKey(val)
+                }}
+                placeholder="AIzaSy... (paste your Gemini API key here)"
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
               />
               <button
-                onClick={handleSaveGeminiKey}
-                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs active:scale-95 transition-all cursor-pointer"
+                type="button"
+                onClick={handleTestKey}
+                disabled={keyTestStatus.testing}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
               >
-                Save
+                {keyTestStatus.testing ? 'Testing...' : '⚡ Test Key'}
               </button>
             </div>
+
+            {/* Key test status badge */}
+            {keyTestStatus.message && (
+              <div
+                className={`mt-2 p-2 rounded-lg text-[11px] font-medium border flex items-center gap-1.5 ${
+                  keyTestStatus.success
+                    ? 'bg-emerald-500/10 border-emerald-500/30 text-emerald-300'
+                    : 'bg-red-500/10 border-red-500/30 text-red-300'
+                }`}
+              >
+                <span>{keyTestStatus.success ? '✅' : '❌'}</span>
+                <span>{keyTestStatus.message}</span>
+              </div>
+            )}
+
             <a
               href="https://aistudio.google.com/app/apikey"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-block mt-1.5 text-[10px] text-orange-400 hover:underline"
+              className="inline-block mt-2 text-[10px] text-orange-400 hover:underline"
             >
-              Get a free Google Gemini API key →
+              Get a free Google Gemini API key from Google AI Studio →
             </a>
           </div>
         </div>

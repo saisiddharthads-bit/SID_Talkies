@@ -1,4 +1,4 @@
-import type { MemoryItem, ResearchReport, StructuredReply, CompanionMode } from '../types'
+import type { MemoryItem, ResearchReport, StructuredReply, CompanionMode, Expression, AnimationType } from '../types'
 
 const DEFAULT_BASE_URL = 'http://127.0.0.1:8000/api/v1'
 
@@ -26,7 +26,7 @@ class ApiService {
   }
 
   getGeminiKey(): string {
-    return localStorage.getItem('sid_gemini_key') || ''
+    return (localStorage.getItem('sid_gemini_key') || '').trim()
   }
 
   setGeminiKey(key: string) {
@@ -88,6 +88,53 @@ class ApiService {
     }
 
     return false
+  }
+
+  /**
+   * Tests a Gemini API key and returns detailed status information.
+   */
+  async testGeminiApiKey(key: string): Promise<{ success: boolean; message: string }> {
+    const cleanKey = key.trim()
+    if (!cleanKey) {
+      return { success: false, message: 'Please enter an API key.' }
+    }
+
+    // Models to check in order of preference
+    const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+
+    for (const model of modelsToTry) {
+      try {
+        const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${cleanKey}`
+        const res = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Say hello in 2 words.' }] }],
+          }),
+        })
+
+        if (res.ok) {
+          const data = await res.json()
+          const reply = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || 'Ready'
+          return {
+            success: true,
+            message: `Connected to Google Gemini (${model})! Response: "${reply}"`,
+          }
+        } else {
+          const errData = await res.json().catch(() => ({}))
+          const errMsg = errData.error?.message || `HTTP ${res.status}: ${res.statusText}`
+          // If 404 on this model, try the next model
+          if (res.status === 404) {
+            continue
+          }
+          return { success: false, message: `Google Gemini error: ${errMsg}` }
+        }
+      } catch (err: any) {
+        return { success: false, message: `Network error: ${err.message || 'Cannot reach Google API'}` }
+      }
+    }
+
+    return { success: false, message: 'Could not connect to Gemini models with this key.' }
   }
 
   async sendChatMessage(message: string, touchContext?: string): Promise<StructuredReply> {
@@ -159,96 +206,195 @@ class ApiService {
       }
     }
 
-    const systemPrompt = `You are Sparky, an intelligent, loving, and talkative AI companion character.
-Persona Mode: ${currentMode}.
-Target Language: ${currentLang}.
-User said: "${message}".
-INSTRUCTIONS:
-- Answer the user's question directly with real knowledge, insight, humor, or genuine conversation.
-- NEVER repeat what the user said (never say "You said: ...").
-- Speak naturally in ${currentLang}.
-- Keep your response concise (1 to 3 sentences, perfect for speech synthesis).
-- Respond ONLY with valid JSON in this exact shape:
-{"text": "your spoken answer here", "expression": "happy|curious|surprised|sleepy|thinking", "animation": "idle|dance|wave|tap_react|pet_react"}`
+    const promptText = `You are Sparky, an intelligent, loving, and talkative AI companion character.
+Your current persona mode: ${currentMode}.
+Target language to reply in: ${currentLang}.
+The user said: "${message}".
 
-    // A. Use Google Gemini 2.5 Flash if API key is provided
+CRITICAL INSTRUCTIONS:
+- Reply directly to the user with genuine warmth, rich information, humor, or advice.
+- NEVER repeat or echo what the user said (never say "You said: ...").
+- Speak naturally in ${currentLang}.
+- Keep your response concise (1 to 2 conversational sentences, perfect for speech synthesis).`
+
+    // A. Use Google Gemini if API key is provided
     if (geminiKey) {
-      try {
-        const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${geminiKey}`
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: systemPrompt }] }],
-            generationConfig: { responseMimeType: 'application/json' },
-          }),
-        })
-        if (res.ok) {
-          const data = await res.json()
-          const raw = data.candidates?.[0]?.content?.parts?.[0]?.text
-          if (raw) {
-            return this.parseStructuredJson(raw)
+      const modelsToTry = ['gemini-1.5-flash', 'gemini-2.0-flash', 'gemini-1.5-pro']
+      let lastGeminiError = ''
+
+      for (const model of modelsToTry) {
+        try {
+          const url = `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${geminiKey}`
+          const res = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: promptText }] }],
+              generationConfig: {
+                temperature: 0.7,
+                maxOutputTokens: 150,
+              },
+            }),
+          })
+
+          if (res.ok) {
+            const data = await res.json()
+            const replyText = data.candidates?.[0]?.content?.parts?.[0]?.text?.trim()
+            if (replyText) {
+              return this.inferExpressionAndAnimation(replyText)
+            }
+          } else {
+            const errData = await res.json().catch(() => ({}))
+            lastGeminiError = errData.error?.message || `HTTP ${res.status}`
+            if (res.status === 404) {
+              continue // Try next model name
+            }
           }
+        } catch (err: any) {
+          lastGeminiError = err.message || 'Network error'
         }
-      } catch (err) {
-        console.warn('Gemini API call failed, falling back to Smart Cloud LLM:', err)
+      }
+
+      // If user gave a Gemini key and it failed, explicitly notify them!
+      if (lastGeminiError) {
+        return {
+          text: `I received your message, but Google Gemini returned an error: "${lastGeminiError}". Please check your API key in Settings!`,
+          expression: 'curious',
+          animation: 'idle',
+          speech_style: 'friendly',
+        }
       }
     }
 
-    // B. Free High-Speed Cloud LLM
+    // B. Free High-Speed Cloud LLM via GET endpoint
     try {
-      const res = await fetch('https://text.pollinations.ai/', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          messages: [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: message },
-          ],
-          jsonMode: true,
-        }),
+      const encodedPrompt = encodeURIComponent(promptText)
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 6000)
+
+      const res = await fetch(`https://text.pollinations.ai/${encodedPrompt}?model=openai`, {
+        signal: controller.signal,
       })
+      clearTimeout(timeoutId)
 
       if (res.ok) {
-        const raw = await res.text()
-        return this.parseStructuredJson(raw)
+        const textResp = (await res.text()).trim()
+        if (textResp && textResp.length > 2) {
+          return this.inferExpressionAndAnimation(textResp)
+        }
       }
     } catch (err) {
-      console.warn('Cloud LLM unreachable, using rich offline knowledge base:', err)
+      console.warn('Cloud LLM unreachable, using rich offline conversational knowledge base:', err)
     }
 
-    // C. Rich Offline Knowledge Fallback
+    // C. Rich Offline Conversational Knowledge Fallback
     return this.generateOfflineKnowledge(message)
   }
 
-  private parseStructuredJson(raw: string): StructuredReply {
-    try {
-      let cleaned = raw.trim()
-      if (cleaned.startsWith('```json')) cleaned = cleaned.slice(7)
-      if (cleaned.startsWith('```')) cleaned = cleaned.slice(3)
-      if (cleaned.endsWith('```')) cleaned = cleaned.slice(0, -3)
-      cleaned = cleaned.trim()
+  private inferExpressionAndAnimation(text: string): StructuredReply {
+    const lower = text.toLowerCase()
+    let expression: Expression = 'happy'
+    let animation: AnimationType = 'idle'
 
-      const parsed = JSON.parse(cleaned)
+    if (lower.includes('?') || lower.includes('curious') || lower.includes('wonder') || lower.includes('think')) {
+      expression = 'curious'
+      animation = 'idle'
+    } else if (lower.includes('haha') || lower.includes('joke') || lower.includes('fun') || lower.includes('yay') || lower.includes('dance')) {
+      expression = 'happy'
+      animation = 'dance'
+    } else if (lower.includes('wow') || lower.includes('incredible') || lower.includes('amazing') || lower.includes('surprise')) {
+      expression = 'surprised'
+      animation = 'tap_react'
+    } else if (lower.includes('sleep') || lower.includes('rest') || lower.includes('drowsy') || lower.includes('night')) {
+      expression = 'sleepy'
+      animation = 'idle'
+    } else if (lower.includes('research') || lower.includes('fact') || lower.includes('science') || lower.includes('analyze')) {
+      expression = 'thinking'
+      animation = 'thinking_loop'
+    } else if (lower.includes('hello') || lower.includes('hi ') || lower.includes('welcome') || lower.includes('hey')) {
+      expression = 'happy'
+      animation = 'wave'
+    }
+
+    return {
+      text,
+      expression,
+      animation,
+      speech_style: 'friendly',
+    }
+  }
+
+  private generateOfflineKnowledge(message: string): StructuredReply {
+    const p = message.toLowerCase().trim()
+    const clean = p.replace(/[.,!?;:]/g, '')
+
+    // Common greetings
+    if (clean === 'hi' || clean === 'hello' || clean === 'hey' || clean === 'howdy' || clean.startsWith('hi ') || clean.startsWith('hello ')) {
       return {
-        text: parsed.text || "I'm right here with you!",
-        expression: parsed.expression || 'happy',
-        animation: parsed.animation || 'idle',
+        text: "Hello there! It's so wonderful to see you today! I'm Sparky, your cheerful companion. What would you like to talk about?",
+        expression: 'happy',
+        animation: 'wave',
         speech_style: 'friendly',
       }
-    } catch {
+    }
+    if (clean.includes('good morning')) {
       return {
-        text: raw.replace(/[{}"]/g, '').trim() || "I'm having a great time chatting with you!",
+        text: 'Good morning! Wishing you a bright, energetic, and wonderful day ahead! How are you feeling today?',
+        expression: 'happy',
+        animation: 'wave',
+        speech_style: 'friendly',
+      }
+    }
+    if (clean.includes('good night')) {
+      return {
+        text: 'Good night! Sleep well, dream sweet dreams, and rest up. I will be right here waiting for you in the morning!',
+        expression: 'sleepy',
+        animation: 'idle',
+        speech_style: 'soft',
+      }
+    }
+    if (clean.includes('how are you') || clean.includes('how r u') || clean.includes('whats up') || clean.includes("what's up")) {
+      return {
+        text: "I'm feeling great and super excited to chat with you! How has your day been going?",
+        expression: 'happy',
+        animation: 'dance',
+        speech_style: 'friendly',
+      }
+    }
+    if (clean.includes('who are you') || clean.includes('what are you') || clean.includes('your name')) {
+      return {
+        text: "I'm Sparky, your living AI companion! I can talk with you, do web research with sources, save facts you approve, and play fun games together!",
+        expression: 'curious',
+        animation: 'wave',
+        speech_style: 'friendly',
+      }
+    }
+    if (clean.includes('what can you do') || clean.includes('help me')) {
+      return {
+        text: "I can converse with you in 30+ languages, explain science, do web research with citations, remember things you tell me, and play our snack catch mini-game!",
         expression: 'happy',
         animation: 'idle',
         speech_style: 'friendly',
       }
     }
-  }
+    if (clean.includes('thank') || clean.includes('thanks')) {
+      return {
+        text: "You are so very welcome! Helping you and making you smile is my absolute favorite thing to do!",
+        expression: 'happy',
+        animation: 'dance',
+        speech_style: 'playful',
+      }
+    }
+    if (clean.includes('love you')) {
+      return {
+        text: 'Aww, that warms my little digital heart! You are an amazing friend, and I love spending time with you!',
+        expression: 'happy',
+        animation: 'pet_react',
+        speech_style: 'friendly',
+      }
+    }
 
-  private generateOfflineKnowledge(message: string): StructuredReply {
-    const p = message.toLowerCase()
-
+    // Knowledge topics
     if (p.includes('sky') && p.includes('blue')) {
       return {
         text: "The sky looks blue because of Rayleigh scattering! Blue light waves from the sun are shorter and smaller than other colors, so they scatter in all directions through the Earth's atmosphere!",
@@ -275,7 +421,7 @@ INSTRUCTIONS:
     }
     if (p.includes('joke') || p.includes('funny')) {
       return {
-        text: 'Why do programmers always prefer dark mode? Because light attracts bugs! Hehe, how was that one?',
+        text: 'Why do programmers always prefer dark mode? Because light attracts bugs! Hehe, what do you think of that one?',
         expression: 'happy',
         animation: 'dance',
         speech_style: 'playful',
@@ -295,14 +441,6 @@ INSTRUCTIONS:
         expression: 'sleepy',
         animation: 'pet_react',
         speech_style: 'soft',
-      }
-    }
-    if (p.includes('how are you') || p.includes('who are you')) {
-      return {
-        text: "I'm Sparky! I'm feeling cheerful, curious, and excited to be talking with you! How has your day been going?",
-        expression: 'happy',
-        animation: 'wave',
-        speech_style: 'friendly',
       }
     }
     if (p.includes('dance')) {
@@ -331,7 +469,7 @@ INSTRUCTIONS:
     }
 
     return {
-      text: `That is really fascinating! Thinking about "${message}" opens up so many interesting angles. What sparked your curiosity about this today?`,
+      text: `I'm happy to chat about that! Could you tell me a little more about what you'd like to explore? I'm listening!`,
       expression: 'curious',
       animation: 'idle',
       speech_style: 'friendly',
