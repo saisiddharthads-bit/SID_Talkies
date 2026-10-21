@@ -312,16 +312,19 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
               <span>AI Intelligence Engine</span>
             </label>
             <span className="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-              Active • Live LLM
+              Active • Pre-Configured
             </span>
           </div>
           <p className="text-[11px] text-slate-400 leading-relaxed">
-            Sparky now uses live multi-turn Large Language Models to answer any question, converse naturally, and explain concepts in your chosen language.
+            Your official Google Gemini API is fully integrated into SID_Talkies! Sparky uses live LLMs to hold real conversations, share knowledge, and speak dynamically in any selected language without manual setup.
           </p>
           <div>
-            <label className="block text-slate-400 text-[11px] mb-1">
-              Google Gemini API Key (from Google AI Studio):
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="text-slate-400 text-[11px]">
+                Google Gemini API Key:
+              </label>
+              <span className="text-[10px] text-emerald-400 font-medium">✓ Default Key Loaded</span>
+            </div>
             <div className="flex gap-2">
               <input
                 type="password"
@@ -331,7 +334,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                   setGeminiKey(val)
                   api.setGeminiKey(val)
                 }}
-                placeholder="AIzaSy... (paste your Gemini API key here)"
+                placeholder="Pre-configured Gemini API Key"
                 className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500 font-mono"
               />
               <button
@@ -340,7 +343,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 disabled={keyTestStatus.testing}
                 className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-medium text-xs active:scale-95 transition-all cursor-pointer whitespace-nowrap"
               >
-                {keyTestStatus.testing ? 'Testing...' : '⚡ Test Key'}
+                {keyTestStatus.testing ? 'Testing...' : '⚡ Test Connection'}
               </button>
             </div>
 
@@ -357,15 +360,6 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 <span>{keyTestStatus.message}</span>
               </div>
             )}
-
-            <a
-              href="https://aistudio.google.com/app/apikey"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-block mt-2 text-[10px] text-orange-400 hover:underline"
-            >
-              Get a free Google Gemini API key from Google AI Studio →
-            </a>
           </div>
         </div>
 

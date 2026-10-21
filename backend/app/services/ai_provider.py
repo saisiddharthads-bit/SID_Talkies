@@ -22,27 +22,44 @@ class SmartCloudAIProvider(BaseAIProvider):
     async def generate_response(self, system_instruction: str, prompt: str, history: List[Dict[str, str]]) -> str:
         # 1. If Gemini API key is configured, use official Gemini
         if settings.GEMINI_API_KEY:
-            try:
-                url = f"https://generativelanguage.googleapis.com/v1beta/models/{settings.DEFAULT_MODEL_NAME}:generateContent?key={settings.GEMINI_API_KEY}"
-                contents = []
-                for h in history:
-                    role = "user" if h["role"] == "user" else "model"
-                    contents.append({"role": role, "parts": [{"text": h["content"]}]})
-                contents.append({"role": "user", "parts": [{"text": prompt}]})
+            models_to_try = [
+                settings.DEFAULT_MODEL_NAME,
+                "gemini-flash-lite-latest",
+                "gemini-3-flash-preview",
+                "gemini-flash-latest",
+                "gemini-3.5-flash",
+            ]
+            unique_models: List[str] = []
+            for m in models_to_try:
+                if m and m not in unique_models:
+                    unique_models.append(m)
 
-                payload = {
-                    "system_instruction": {"parts": [{"text": system_instruction}]},
-                    "contents": contents,
-                    "generationConfig": {"temperature": 0.7, "responseMimeType": "application/json"}
-                }
+            contents = []
+            for h in history:
+                role = "user" if h["role"] == "user" else "model"
+                contents.append({"role": role, "parts": [{"text": h["content"]}]})
+            contents.append({"role": "user", "parts": [{"text": prompt}]})
 
-                async with httpx.AsyncClient(timeout=15.0) as client:
-                    res = await client.post(url, json=payload)
-                    res.raise_for_status()
-                    data = res.json()
-                    return data["candidates"][0]["content"]["parts"][0]["text"]
-            except Exception as e:
-                app_logger.warning(f"Gemini API request failed: {e}. Falling back to Smart Cloud AI.")
+            payload = {
+                "system_instruction": {"parts": [{"text": system_instruction}]},
+                "contents": contents,
+                "generationConfig": {"temperature": 0.7, "responseMimeType": "application/json"}
+            }
+
+            for model_name in unique_models:
+                try:
+                    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model_name}:generateContent?key={settings.GEMINI_API_KEY}"
+                    async with httpx.AsyncClient(timeout=15.0) as client:
+                        res = await client.post(url, json=payload)
+                        if res.status_code == 200:
+                            data = res.json()
+                            candidate_text = data["candidates"][0]["content"]["parts"][0]["text"]
+                            if candidate_text:
+                                return candidate_text
+                        else:
+                            app_logger.warning(f"Gemini model {model_name} returned status {res.status_code}. Trying next model...")
+                except Exception as e:
+                    app_logger.warning(f"Gemini API request failed for {model_name}: {e}. Trying next fallback...")
 
         # 2. Free High-Speed Cloud LLM
         try:

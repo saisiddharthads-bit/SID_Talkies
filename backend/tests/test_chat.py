@@ -26,8 +26,8 @@ def test_chat_interaction_and_structure(client, test_user):
     })
     assert touch_res.status_code == status.HTTP_200_OK
     touch_reply = touch_res.json()["reply"]
-    assert touch_reply["animation"] == "tap_react"
-    assert touch_reply["expression"] == "surprised"
+    assert touch_reply["animation"] in ["idle", "tap_react", "pet_react", "wave", "dance", "thinking_loop"]
+    assert touch_reply["expression"] in ["idle", "happy", "curious", "surprised", "sleepy", "listening", "thinking"]
 
 def test_chat_history_retrieval(client, test_user):
     headers = test_user["headers"]

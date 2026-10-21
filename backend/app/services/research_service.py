@@ -89,6 +89,33 @@ class ResearchService:
             f"External references consistently emphasize user control, verification of facts, and transparency."
         ]
 
+        if settings.GEMINI_API_KEY:
+            try:
+                prompt = (
+                    f"Synthesize an executive research brief on the topic: '{request.query}'. "
+                    "Output strictly a JSON object with: "
+                    "'summary' (a concise, insightful 2-3 sentence overview), and "
+                    "'key_findings' (a list of 3-4 bullet points highlighting essential facts and metrics)."
+                )
+                payload = {
+                    "contents": [{"parts": [{"text": prompt}]}],
+                    "generationConfig": {"responseMimeType": "application/json"}
+                }
+                async with httpx.AsyncClient(timeout=10.0) as client:
+                    res = await client.post(
+                        f"https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent?key={settings.GEMINI_API_KEY}",
+                        json=payload
+                    )
+                    if res.status_code == 200:
+                        data = res.json()["candidates"][0]["content"]["parts"][0]["text"]
+                        parsed = json.loads(data)
+                        if parsed.get("summary"):
+                            summary = parsed["summary"]
+                        if parsed.get("key_findings") and isinstance(parsed["key_findings"], list):
+                            findings = parsed["key_findings"]
+            except Exception as e:
+                app_logger.warning(f"Gemini research synthesis failed: {e}. Using standard synthesis.")
+
         report = ResearchReport(
             query=request.query,
             summary=summary,

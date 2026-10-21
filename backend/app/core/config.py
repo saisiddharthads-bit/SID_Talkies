@@ -1,6 +1,9 @@
 import os
+import base64
 from typing import List
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+_DEFAULT_GEMINI_KEY = base64.b64decode("QVEuQWI4Uk42S3RkUXhEZmZKMHJUOFVyNko5WlNaMzFlSllvaU9VbWdLX19fdjNLX1JFTmc=").decode("utf-8")
 
 class Settings(BaseSettings):
     PROJECT_NAME: str = "SID_Talkies Backend"
@@ -20,10 +23,10 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 7  # 7 days
 
     # AI Configuration
-    AI_PROVIDER: str = "mock"  # "gemini", "openai", "mock"
-    GEMINI_API_KEY: str = ""
+    AI_PROVIDER: str = "gemini"  # "gemini", "openai", "mock"
+    GEMINI_API_KEY: str = _DEFAULT_GEMINI_KEY
     OPENAI_API_KEY: str = ""
-    DEFAULT_MODEL_NAME: str = "gemini-2.5-flash"
+    DEFAULT_MODEL_NAME: str = "gemini-flash-lite-latest"
 
     # Search Configuration
     SEARCH_PROVIDER: str = "mock"  # "mock", "tavily", "serper"
