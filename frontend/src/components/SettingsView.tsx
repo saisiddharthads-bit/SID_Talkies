@@ -13,6 +13,7 @@ import {
   Globe,
   Sliders,
   Play,
+  Cpu,
 } from 'lucide-react'
 import type { CompanionMode } from '../types'
 import { api } from '../services/api'
@@ -30,6 +31,7 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   onLanguageChange,
 }) => {
   const [apiUrl, setApiUrl] = useState<string>(api.getBaseUrl())
+  const [geminiKey, setGeminiKey] = useState<string>(() => api.getGeminiKey())
   const [statusMsg, setStatusMsg] = useState<string>('')
 
   // Voice studio state
@@ -128,6 +130,12 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
   const handleSaveUrl = () => {
     api.setBaseUrl(apiUrl.trim())
     setStatusMsg('Backend API URL saved.')
+    setTimeout(() => setStatusMsg(''), 2500)
+  }
+
+  const handleSaveGeminiKey = () => {
+    api.setGeminiKey(geminiKey.trim())
+    setStatusMsg('Gemini API key updated!')
     setTimeout(() => setStatusMsg(''), 2500)
   }
 
@@ -288,6 +296,50 @@ export const SettingsView: React.FC<SettingsViewProps> = ({
                 </button>
               )
             })}
+          </div>
+        </div>
+
+        {/* AI Model & Intelligence Engine */}
+        <div className="p-3.5 rounded-xl bg-slate-900 border border-slate-800 space-y-2.5">
+          <div className="flex items-center justify-between">
+            <label className="text-slate-200 font-bold flex items-center gap-1.5">
+              <Cpu className="w-4 h-4 text-emerald-400" />
+              <span>AI Intelligence Engine</span>
+            </label>
+            <span className="text-[10px] text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 border border-emerald-500/20">
+              Active • Live LLM
+            </span>
+          </div>
+          <p className="text-[11px] text-slate-400 leading-relaxed">
+            Sparky now uses live multi-turn Large Language Models to answer any question, converse naturally, and explain concepts in your chosen language.
+          </p>
+          <div>
+            <label className="block text-slate-400 text-[11px] mb-1">
+              Optional Google Gemini API Key (for direct Google AI Cloud):
+            </label>
+            <div className="flex gap-2">
+              <input
+                type="password"
+                value={geminiKey}
+                onChange={(e) => setGeminiKey(e.target.value)}
+                placeholder="AIzaSy... (leave blank to use free cloud AI)"
+                className="flex-1 bg-slate-950 border border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-200 focus:outline-none focus:border-emerald-500"
+              />
+              <button
+                onClick={handleSaveGeminiKey}
+                className="px-3.5 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white font-medium text-xs active:scale-95 transition-all cursor-pointer"
+              >
+                Save
+              </button>
+            </div>
+            <a
+              href="https://aistudio.google.com/app/apikey"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block mt-1.5 text-[10px] text-orange-400 hover:underline"
+            >
+              Get a free Google Gemini API key →
+            </a>
           </div>
         </div>
 
