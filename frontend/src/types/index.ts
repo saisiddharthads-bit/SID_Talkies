@@ -4,6 +4,14 @@ export type AnimationType = 'idle' | 'tap_react' | 'pet_react' | 'wave' | 'dance
 
 export type CompanionMode = 'friend' | 'romantic' | 'business' | 'student' | 'everyday'
 
+export interface LanguageOption {
+  code: string
+  name: string
+  nativeName: string
+  flag: string
+  greeting: string
+}
+
 export interface StructuredReply {
   text: string
   expression: Expression

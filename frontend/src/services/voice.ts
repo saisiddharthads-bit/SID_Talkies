@@ -1,24 +1,57 @@
-// Voice Engine: Native Speech Synthesis (TTS) and Speech Recognition (STT)
+// Voice Engine: Multi-Language Speech Synthesis (TTS) & Multi-Language Recognition (STT)
+import type { LanguageOption } from '../types'
 
-export interface VoiceState {
-  isSpeaking: boolean
-  isListening: boolean
-  isMuted: boolean
-  supported: {
-    tts: boolean
-    stt: boolean
-  }
-}
+export const SUPPORTED_LANGUAGES: LanguageOption[] = [
+  { code: 'en-US', name: 'English (US)', nativeName: 'English (US)', flag: '🇺🇸', greeting: "Hello! I'm Sparky, your cheerful AI companion!" },
+  { code: 'en-GB', name: 'English (UK)', nativeName: 'English (UK)', flag: '🇬🇧', greeting: "Cheerio! Lovely to see you today!" },
+  { code: 'hi-IN', name: 'Hindi', nativeName: 'हिन्दी', flag: '🇮🇳', greeting: "नमस्ते! मैं स्पार्की हूँ, आपका प्यारा साथी!" },
+  { code: 'te-IN', name: 'Telugu', nativeName: 'తెలుగు', flag: '🇮🇳', greeting: "నమస్కారం! నేను స్పార్కీ, మీ సహాయకుడిని!" },
+  { code: 'ta-IN', name: 'Tamil', nativeName: 'தமிழ்', flag: '🇮🇳', greeting: "வணக்கம்! நான் ஸ்பார்க்கி, உங்கள் துணைவன்!" },
+  { code: 'es-ES', name: 'Spanish (Spain)', nativeName: 'Español', flag: '🇪🇸', greeting: "¡Hola! Soy Sparky, tu compañero virtual!" },
+  { code: 'es-MX', name: 'Spanish (Mexico)', nativeName: 'Español (México)', flag: '🇲🇽', greeting: "¡Hola amigo! ¿Qué tal tu día?" },
+  { code: 'fr-FR', name: 'French', nativeName: 'Français', flag: '🇫🇷', greeting: "Bonjour! Je suis Sparky, votre compagnon fidèle!" },
+  { code: 'de-DE', name: 'German', nativeName: 'Deutsch', flag: '🇩🇪', greeting: "Hallo! Ich bin Sparky, dein Begleiter!" },
+  { code: 'it-IT', name: 'Italian', nativeName: 'Italiano', flag: '🇮🇹', greeting: "Ciao! Sono Sparky, il tuo amico virtuale!" },
+  { code: 'pt-BR', name: 'Portuguese (Brazil)', nativeName: 'Português (Brasil)', flag: '🇧🇷', greeting: "Olá! Eu sou o Sparky, seu melhor amigo!" },
+  { code: 'pt-PT', name: 'Portuguese (Portugal)', nativeName: 'Português', flag: '🇵🇹', greeting: "Olá! Sou o Sparky, o teu companheiro!" },
+  { code: 'ja-JP', name: 'Japanese', nativeName: '日本語', flag: '🇯🇵', greeting: "こんにちは！スパーキーです！今日もよろしくね！" },
+  { code: 'ko-KR', name: 'Korean', nativeName: '한국어', flag: '🇰🇷', greeting: "안녕하세요! 저는 스파키예요! 만나서 반가워요!" },
+  { code: 'zh-CN', name: 'Chinese (Simplified)', nativeName: '中文 (简体)', flag: '🇨🇳', greeting: "你好！我是火花 Sparky，很高兴见到你！" },
+  { code: 'zh-TW', name: 'Chinese (Traditional)', nativeName: '中文 (繁體)', flag: '🇹🇼', greeting: "你好！我是 Sparky，今天想聊什麼呢？" },
+  { code: 'ru-RU', name: 'Russian', nativeName: 'Русский', flag: '🇷🇺', greeting: "Привет! Я Спарки, твой верный друг!" },
+  { code: 'ar-SA', name: 'Arabic', nativeName: 'العربية', flag: '🇸🇦', greeting: "مرحباً! أنا سباركي، رفيقك الوفي!" },
+  { code: 'nl-NL', name: 'Dutch', nativeName: 'Nederlands', flag: '🇳🇱', greeting: "Hallo! Ik ben Sparky, jouw gezellige maatje!" },
+  { code: 'tr-TR', name: 'Turkish', nativeName: 'Türkçe', flag: '🇹🇷', greeting: "Merhaba! Ben Sparky, senin can dostunum!" },
+  { code: 'pl-PL', name: 'Polish', nativeName: 'Polski', flag: '🇵🇱', greeting: "Cześć! Jestem Sparky, twój wierny kompan!" },
+  { code: 'sv-SE', name: 'Swedish', nativeName: 'Svenska', flag: '🇸🇪', greeting: "Hej! Jag är Sparky, din virtuella vän!" },
+  { code: 'id-ID', name: 'Indonesian', nativeName: 'Bahasa Indonesia', flag: '🇮🇩', greeting: "Halo! Saya Sparky, teman setia Anda!" },
+  { code: 'vi-VN', name: 'Vietnamese', nativeName: 'Tiếng Việt', flag: '🇻🇳', greeting: "Xin chào! Tôi là Sparky, bạn đồng hành của bạn!" },
+  { code: 'th-TH', name: 'Thai', nativeName: 'ไทย', flag: '🇹🇭', greeting: "สวัสดีครับ! ผมคือ Sparky เพื่อนของคุณ!" },
+  { code: 'bn-IN', name: 'Bengali', nativeName: 'বাংলা', flag: '🇮🇳', greeting: "নমস্কার! আমি স্পার্কি, আপনার সঙ্গী!" },
+  { code: 'mr-IN', name: 'Marathi', nativeName: 'मराठी', flag: '🇮🇳', greeting: "नमस्कार! मी स्पार्की, तुमचा मित्र!" },
+  { code: 'ur-PK', name: 'Urdu', nativeName: 'اردو', flag: '🇵🇰', greeting: "سلام! میں سپارکی ہوں، آپ کا ساتھی!" },
+  { code: 'el-GR', name: 'Greek', nativeName: 'Ελληνικά', flag: '🇬🇷', greeting: "Γεια σας! Είμαι ο Sparky, ο σύντροφός σας!" },
+]
 
 class VoiceEngine {
   private synth: SpeechSynthesis | null = typeof window !== 'undefined' ? window.speechSynthesis : null
   private recognition: any = null
-  private preferredVoice: SpeechSynthesisVoice | null = null
+  private allVoices: SpeechSynthesisVoice[] = []
+  private selectedVoice: SpeechSynthesisVoice | null = null
+  private selectedLangCode: string = 'en-US'
+  private pitchModifier: number = 1.2
+  private rateModifier: number = 1.05
   private isMuted: boolean = false
   private isListeningActive: boolean = false
 
+  public onVoicesLoaded?: () => void
+
   constructor() {
     this.isMuted = localStorage.getItem('sid_voice_muted') === 'true'
+    this.selectedLangCode = localStorage.getItem('sid_voice_lang') || 'en-US'
+    this.pitchModifier = parseFloat(localStorage.getItem('sid_voice_pitch') || '1.2')
+    this.rateModifier = parseFloat(localStorage.getItem('sid_voice_rate') || '1.05')
+
     this.initVoices()
     this.initRecognition()
   }
@@ -27,13 +60,18 @@ class VoiceEngine {
     if (!this.synth) return
 
     const loadVoices = () => {
-      const voices = this.synth?.getVoices() || []
-      // Prefer high-quality, friendly, or female/youthful English voices for Sparky
-      this.preferredVoice =
-        voices.find((v) => v.lang.startsWith('en') && (v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Samantha') || v.name.includes('Jenny') || v.name.includes('Zira') || v.name.includes('David'))) ||
-        voices.find((v) => v.lang.startsWith('en')) ||
-        voices[0] ||
-        null
+      this.allVoices = this.synth?.getVoices() || []
+      const savedVoiceURI = localStorage.getItem('sid_voice_uri')
+
+      if (savedVoiceURI) {
+        this.selectedVoice = this.allVoices.find((v) => v.voiceURI === savedVoiceURI) || null
+      }
+
+      if (!this.selectedVoice) {
+        this.selectDefaultVoiceForLang(this.selectedLangCode)
+      }
+
+      this.onVoicesLoaded?.()
     }
 
     loadVoices()
@@ -51,8 +89,86 @@ class VoiceEngine {
       this.recognition = new SpeechRecognition()
       this.recognition.continuous = false
       this.recognition.interimResults = true
-      this.recognition.lang = 'en-US'
+      this.recognition.lang = this.selectedLangCode
     }
+  }
+
+  public getAllVoices(): SpeechSynthesisVoice[] {
+    return this.allVoices
+  }
+
+  public getVoicesForLanguage(langCode: string): SpeechSynthesisVoice[] {
+    const prefix = langCode.split('-')[0].toLowerCase()
+    return this.allVoices.filter(
+      (v) => v.lang.toLowerCase().startsWith(prefix) || v.lang.replace('_', '-').toLowerCase() === langCode.toLowerCase()
+    )
+  }
+
+  public getCurrentLanguage(): string {
+    return this.selectedLangCode
+  }
+
+  public setLanguage(langCode: string) {
+    this.selectedLangCode = langCode
+    localStorage.setItem('sid_voice_lang', langCode)
+
+    if (this.recognition) {
+      this.recognition.lang = langCode
+    }
+
+    this.selectDefaultVoiceForLang(langCode)
+  }
+
+  private selectDefaultVoiceForLang(langCode: string) {
+    const matching = this.getVoicesForLanguage(langCode)
+    if (matching.length > 0) {
+      // Prefer high quality, Google, or Natural voices
+      const preferred = matching.find(
+        (v) => v.name.includes('Google') || v.name.includes('Natural') || v.name.includes('Zira') || v.name.includes('Jenny')
+      )
+      this.selectedVoice = preferred || matching[0]
+      localStorage.setItem('sid_voice_uri', this.selectedVoice.voiceURI)
+    } else {
+      this.selectedVoice = this.allVoices[0] || null
+    }
+  }
+
+  public getCurrentVoice(): SpeechSynthesisVoice | null {
+    return this.selectedVoice
+  }
+
+  public setVoice(voiceURI: string) {
+    const v = this.allVoices.find((x) => x.voiceURI === voiceURI)
+    if (v) {
+      this.selectedVoice = v
+      localStorage.setItem('sid_voice_uri', voiceURI)
+      // If voice lang is different, also update langCode
+      if (v.lang) {
+        this.selectedLangCode = v.lang.replace('_', '-')
+        localStorage.setItem('sid_voice_lang', this.selectedLangCode)
+        if (this.recognition) {
+          this.recognition.lang = this.selectedLangCode
+        }
+      }
+    }
+  }
+
+  public getPitch(): number {
+    return this.pitchModifier
+  }
+
+  public setPitch(pitch: number) {
+    this.pitchModifier = pitch
+    localStorage.setItem('sid_voice_pitch', String(pitch))
+  }
+
+  public getRate(): number {
+    return this.rateModifier
+  }
+
+  public setRate(rate: number) {
+    this.rateModifier = rate
+    localStorage.setItem('sid_voice_rate', String(rate))
   }
 
   public isTTSSupported(): boolean {
@@ -75,8 +191,14 @@ class VoiceEngine {
     return this.isMuted
   }
 
+  public testVoice() {
+    const currentLang = SUPPORTED_LANGUAGES.find((l) => l.code === this.selectedLangCode)
+    const testText = currentLang?.greeting || "Hello! I am Sparky, your cheerful AI companion!"
+    this.speak(testText, { expression: 'happy' })
+  }
+
   /**
-   * Speaks the given text using speech synthesis with emotional tone tuning.
+   * Speaks the given text using speech synthesis with chosen language, voice, and emotional tone tuning.
    */
   public speak(
     text: string,
@@ -92,7 +214,6 @@ class VoiceEngine {
       return
     }
 
-    // Cancel any ongoing speech
     this.synth.cancel()
 
     // Clean text of emojis and asterisks for smooth pronunciation
@@ -108,36 +229,38 @@ class VoiceEngine {
 
     const utterance = new SpeechSynthesisUtterance(cleanText)
 
-    if (this.preferredVoice) {
-      utterance.voice = this.preferredVoice
+    if (this.selectedVoice) {
+      utterance.voice = this.selectedVoice
+      utterance.lang = this.selectedVoice.lang || this.selectedLangCode
+    } else {
+      utterance.lang = this.selectedLangCode
     }
 
-    // Tune pitch and rate based on emotional expression
+    // Apply base user sliders + emotional tone offsets
+    let pitch = this.pitchModifier
+    let rate = this.rateModifier
+
     switch (options?.expression) {
       case 'happy':
-        utterance.pitch = 1.3
-        utterance.rate = 1.1
+        pitch *= 1.1
+        rate *= 1.05
         break
       case 'surprised':
-        utterance.pitch = 1.4
-        utterance.rate = 1.15
+        pitch *= 1.2
+        rate *= 1.1
         break
       case 'sleepy':
-        utterance.pitch = 0.9
-        utterance.rate = 0.85
+        pitch *= 0.85
+        rate *= 0.85
         break
       case 'thinking':
-        utterance.pitch = 1.05
-        utterance.rate = 0.95
+        pitch *= 0.95
+        rate *= 0.95
         break
-      case 'curious':
-        utterance.pitch = 1.2
-        utterance.rate = 1.0
-        break
-      default:
-        utterance.pitch = 1.2
-        utterance.rate = 1.05
     }
+
+    utterance.pitch = Math.max(0.5, Math.min(2.0, pitch))
+    utterance.rate = Math.max(0.5, Math.min(2.0, rate))
 
     utterance.onstart = () => {
       options?.onStart?.()
@@ -168,7 +291,7 @@ class VoiceEngine {
   }
 
   /**
-   * Starts listening to user's voice via microphone.
+   * Starts listening to user's voice via microphone in the selected language.
    */
   public startListening(callbacks: {
     onResult: (finalText: string) => void
@@ -187,8 +310,10 @@ class VoiceEngine {
       return false
     }
 
-    // Stop speaking while listening to prevent hearing itself
     this.stopSpeaking()
+
+    // Ensure listening in the user's selected language
+    this.recognition.lang = this.selectedLangCode
 
     let finalTranscript = ''
 

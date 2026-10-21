@@ -3,7 +3,7 @@ import confetti from 'canvas-confetti'
 import { Wifi, WifiOff, Volume2, VolumeX } from 'lucide-react'
 import type { Expression, AnimationType, CompanionMode } from './types'
 import { api } from './services/api'
-import { voice } from './services/voice'
+import { voice, SUPPORTED_LANGUAGES } from './services/voice'
 import { CharacterCanvas } from './components/CharacterCanvas'
 import { SpeechBubble } from './components/SpeechBubble'
 import { QuickActions } from './components/QuickActions'
@@ -25,6 +25,7 @@ export const App: React.FC = () => {
   const [interimSpeech, setInterimSpeech] = useState<string>('')
   const [isMuted, setIsMuted] = useState<boolean>(() => voice.getMuted())
   const [isOnline, setIsOnline] = useState<boolean>(true)
+  const [currentLangCode, setCurrentLangCode] = useState<string>(() => voice.getCurrentLanguage())
 
   const idleTimeout = useRef<number | null>(null)
 
@@ -35,6 +36,8 @@ export const App: React.FC = () => {
     })
   }, [])
 
+  const currentLangObj = SUPPORTED_LANGUAGES.find((l) => l.code === currentLangCode) || SUPPORTED_LANGUAGES[0]
+
   const triggerReaction = (text: string, expr: Expression, anim: AnimationType, duration = 4000) => {
     setSpeechText(text)
     setExpression(expr)
@@ -42,7 +45,7 @@ export const App: React.FC = () => {
 
     if (idleTimeout.current) clearTimeout(idleTimeout.current)
 
-    // Invoke speech synthesis to SPEAK OUT LOUD!
+    // Invoke speech synthesis to SPEAK OUT LOUD in the selected language/voice!
     voice.speak(text, {
       expression: expr,
       onStart: () => {
@@ -109,7 +112,7 @@ export const App: React.FC = () => {
     }
 
     setExpression('listening')
-    setSpeechText('Listening to your voice...')
+    setSpeechText(`Listening in ${currentLangObj.name}...`)
     setInterimSpeech('')
 
     const started = voice.startListening({
@@ -147,7 +150,7 @@ export const App: React.FC = () => {
     voice.setMuted(nextMuted)
     if (!nextMuted) {
       // Audio cue test
-      voice.speak('Voice is unmuted!', { expression: 'happy' })
+      voice.speak('Voice unmuted!', { expression: 'happy' })
     }
   }
 
@@ -181,7 +184,17 @@ export const App: React.FC = () => {
             </div>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
+            {/* Language Pill Shortcut */}
+            <button
+              onClick={() => setCurrentTab('settings')}
+              className="flex items-center gap-1 px-2 py-1 rounded-lg bg-slate-800 hover:bg-slate-750 border border-slate-700/80 text-[11px] text-slate-200 cursor-pointer transition-all"
+              title="Change Voice & Language"
+            >
+              <span>{currentLangObj.flag}</span>
+              <span className="font-semibold">{currentLangObj.code.split('-')[0].toUpperCase()}</span>
+            </button>
+
             {/* Mute/Unmute Toggle Button */}
             <button
               onClick={handleToggleMute}
@@ -282,7 +295,11 @@ export const App: React.FC = () => {
 
           {currentTab === 'settings' && (
             <div className="flex-1 p-3 overflow-hidden">
-              <SettingsView currentMode={currentMode} onModeChange={setCurrentMode} />
+              <SettingsView
+                currentMode={currentMode}
+                onModeChange={setCurrentMode}
+                onLanguageChange={setCurrentLangCode}
+              />
             </div>
           )}
         </main>
