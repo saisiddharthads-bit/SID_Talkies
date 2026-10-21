@@ -1,0 +1,67 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8d234settingsui"]
+
+[ext_resource type="Script" path="res://scripts/ui/SettingsController.gd" id="1_sett"]
+
+[node name="SettingsUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_sett")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 20
+
+[node name="Title" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "⚙️ Settings & Companion Personality"
+horizontal_alignment = 1
+
+[node name="ModeSection" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/ModeSection"]
+layout_mode = 2
+text = "Companion Persona Mode:"
+
+[node name="ModeOption" type="OptionButton" parent="VBoxContainer/ModeSection"]
+layout_mode = 2
+
+[node name="PrivacySection" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="MemoryToggle" type="CheckButton" parent="VBoxContainer/PrivacySection"]
+layout_mode = 2
+button_pressed = true
+text = "Enable User Memory"
+
+[node name="ServerSection" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="VBoxContainer/ServerSection"]
+layout_mode = 2
+text = "Backend Server URL:"
+
+[node name="ServerUrlInput" type="LineEdit" parent="VBoxContainer/ServerSection"]
+layout_mode = 2
+text = "http://127.0.0.1:8000/api/v1"
+
+[node name="AccountSection" type="VBoxContainer" parent="VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 10
+
+[node name="LogoutButton" type="Button" parent="VBoxContainer/AccountSection"]
+layout_mode = 2
+text = "Log Out"
+
+[node name="DeleteAccountButton" type="Button" parent="VBoxContainer/AccountSection"]
+layout_mode = 2
+text = "Permanent Account & Data Erasure"

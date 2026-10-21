@@ -1,0 +1,174 @@
+[gd_scene load_steps=9 format=3 uid="uid://c8d234mainmaster"]
+
+[ext_resource type="Script" path="res://scripts/ui/MainUI.gd" id="1_main"]
+[ext_resource type="PackedScene" path="res://scenes/Character.tscn" id="2_char"]
+[ext_resource type="PackedScene" path="res://scenes/ChatUI.tscn" id="3_chat"]
+[ext_resource type="PackedScene" path="res://scenes/MemoryUI.tscn" id="4_mem"]
+[ext_resource type="PackedScene" path="res://scenes/ResearchUI.tscn" id="5_res"]
+[ext_resource type="PackedScene" path="res://scenes/MiniGame.tscn" id="6_game"]
+[ext_resource type="PackedScene" path="res://scenes/SettingsUI.tscn" id="7_sett"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_bubble"]
+bg_color = Color(0.18, 0.20, 0.26, 0.95)
+corner_radius_top_left = 16
+corner_radius_top_right = 16
+corner_radius_bottom_right = 16
+corner_radius_bottom_left = 4
+
+[node name="Main" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main")
+
+[node name="RoomBackground" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.12, 0.14, 0.19, 1)
+
+[node name="RoomFloor" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -420.0
+grow_horizontal = 2
+grow_vertical = 0
+color = Color(0.16, 0.18, 0.24, 1)
+
+[node name="Character" parent="." instance=ExtResource("2_char")]
+position = Vector2(360, 680)
+
+[node name="SpeechBubble" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -290.0
+offset_right = 220.0
+offset_bottom = -210.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_bubble")
+
+[node name="MarginContainer" type="MarginContainer" parent="SpeechBubble"]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="SpeechText" type="Label" parent="SpeechBubble/MarginContainer"]
+layout_mode = 2
+text = "Hello! I'm Sparky!"
+autowrap_mode = 3
+
+[node name="QuickActions" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 14
+anchor_top = 0.5
+anchor_right = 1.0
+anchor_bottom = 0.5
+offset_top = 220.0
+offset_bottom = 270.0
+grow_horizontal = 2
+grow_vertical = 2
+alignment = 1
+theme_override_constants/separation = 20
+
+[node name="FeedBtn" type="Button" parent="QuickActions"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+text = "🍎 Feed"
+
+[node name="DanceBtn" type="Button" parent="QuickActions"]
+custom_minimum_size = Vector2(110, 44)
+layout_mode = 2
+text = "💃 Dance"
+
+[node name="ViewStack" type="TabContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_bottom = -75.0
+grow_horizontal = 2
+grow_vertical = 2
+current_tab = 0
+tabs_visible = false
+
+[node name="RoomTab" type="Control" parent="ViewStack"]
+layout_mode = 2
+
+[node name="ChatTab" parent="ViewStack" instance=ExtResource("3_chat")]
+visible = false
+layout_mode = 2
+
+[node name="MemoryTab" parent="ViewStack" instance=ExtResource("4_mem")]
+visible = false
+layout_mode = 2
+
+[node name="ResearchTab" parent="ViewStack" instance=ExtResource("5_res")]
+visible = false
+layout_mode = 2
+
+[node name="GameTab" parent="ViewStack" instance=ExtResource("6_game")]
+visible = false
+layout_mode = 2
+
+[node name="SettingsTab" parent="ViewStack" instance=ExtResource("7_sett")]
+visible = false
+layout_mode = 2
+
+[node name="BottomNav" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -70.0
+grow_horizontal = 2
+grow_vertical = 0
+alignment = 1
+theme_override_constants/separation = 8
+
+[node name="RoomBtn" type="Button" parent="BottomNav"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🏠 Room"
+
+[node name="ChatBtn" type="Button" parent="BottomNav"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "💬 Chat"
+
+[node name="MemoryBtn" type="Button" parent="BottomNav"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🧠 Memory"
+
+[node name="ResearchBtn" type="Button" parent="BottomNav"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🔍 Research"
+
+[node name="GameBtn" type="Button" parent="BottomNav"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "🎮 Game"
+
+[node name="SettingsBtn" type="Button" parent="BottomNav"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "⚙️ Settings"

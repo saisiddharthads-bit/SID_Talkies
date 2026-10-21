@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="128" height="128" viewBox="0 0 128 128">
+  <rect width="128" height="128" rx="28" fill="#1e222d"/>
+  <!-- Fox ears -->
+  <polygon points="35,45 20,15 50,30" fill="#f58220"/>
+  <polygon points="93,45 108,15 78,30" fill="#f58220"/>
+  <polygon points="35,42 25,20 45,32" fill="#fef0d9"/>
+  <polygon points="93,42 103,20 83,32" fill="#fef0d9"/>
+  <!-- Fox head -->
+  <circle cx="64" cy="68" r="42" fill="#f58220"/>
+  <ellipse cx="64" cy="80" rx="26" ry="20" fill="#fef0d9"/>
+  <!-- Blush -->
+  <circle cx="38" cy="78" r="6" fill="#fba4af" opacity="0.8"/>
+  <circle cx="90" cy="78" r="6" fill="#fba4af" opacity="0.8"/>
+  <!-- Eyes -->
+  <circle cx="48" cy="64" r="5" fill="#242633"/>
+  <circle cx="49" cy="62" r="1.8" fill="#ffffff"/>
+  <circle cx="80" cy="64" r="5" fill="#242633"/>
+  <circle cx="81" cy="62" r="1.8" fill="#ffffff"/>
+  <!-- Nose -->
+  <polygon points="64,74 61,71 67,71" fill="#242633"/>
+  <!-- Sparkles -->
+  <circle cx="102" cy="40" r="2.5" fill="#ffd166"/>
+  <circle cx="26" cy="94" r="2.5" fill="#ffd166"/>
+</svg>

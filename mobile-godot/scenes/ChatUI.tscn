@@ -1,0 +1,60 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8d234chatui"]
+
+[ext_resource type="Script" path="res://scripts/ui/ChatController.gd" id="1_chat"]
+
+[node name="ChatUI" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_chat")
+
+[node name="Header" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 50.0
+grow_horizontal = 2
+
+[node name="ModeLabel" type="Label" parent="Header"]
+layout_mode = 2
+text = "Mode: Friend"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = 55.0
+offset_bottom = -75.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MessageList" type="VBoxContainer" parent="ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 10
+
+[node name="InputBar" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -65.0
+offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 0
+
+[node name="MessageInput" type="LineEdit" parent="InputBar"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Talk to Sparky..."
+
+[node name="SendButton" type="Button" parent="InputBar"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+text = "Send"
